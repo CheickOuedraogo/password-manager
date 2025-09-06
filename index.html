@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestionnaire de Mots de Passe</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="security-indicator" id="securityIndicator">
+      🔒 Mode Sécurisé
+    </div>
+    <div class="container">
+      <header>
+        <h1>Gestionnaire de Mots de Passe</h1>
+        <nav class="nav-tabs" id="navTabs" style="display: none;">
+          <button class="nav-tab active" onclick="showPage('home')">Accueil</button>
+          <button class="nav-tab" onclick="showPage('settings')">Paramètres</button>
+        </nav>
+      </header>
+
+      <div class="import-section" id="importSection">
+        <div class="upload-area">
+          <input
+            type="file"
+            id="jsonFile"
+            accept=".json"
+            style="display: none"
+          />
+          <button
+            onclick="document.getElementById('jsonFile').click()"
+            class="btn-primary"
+          >
+            Importer le fichier JSON
+          </button>
+          <div class="separator">ou</div>
+          <button onclick="startFresh()" class="btn-secondary">
+            Commencer sans fichier
+          </button>
+        </div>
+      </div>
+
+      <div class="password-section" id="passwordSection" style="display: none">
+        <div class="master-password">
+          <div class="password-field">
+            <input
+              type="password"
+              id="masterPassword"
+              placeholder="Mot de passe maître pour déchiffrer"
+              onkeydown="if(event.key==='Enter') decryptPasswords()"
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              onclick="togglePasswordVisibility('masterPassword')"
+            >
+              <svg class="eye-icon eye-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+                <circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/>
+              </svg>
+              <svg class="eye-icon eye-closed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="display: none;">
+                <path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/>
+                <path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/>
+              </svg>
+            </button>
+          </div>
+          <button onclick="decryptPasswords()" class="btn-primary">
+            Déchiffrer
+          </button>
+        </div>
+      </div>
+
+      <!-- Page Accueil -->
+      <div class="page-content" id="homePage" style="display: none;">
+        <div class="controls">
+          <button onclick="showAddForm()" class="btn-success">Ajouter</button>
+          <button onclick="exportPasswords()" class="btn-primary">
+            Exporter JSON
+          </button>
+          <input
+            type="file"
+            id="mergeJsonFile"
+            accept=".json"
+            style="display: none"
+          />
+          <button
+            onclick="document.getElementById('mergeJsonFile').click()"
+            class="btn-secondary"
+            title="Fusionner avec un autre fichier JSON"
+          >
+            Fusionner JSON
+          </button>
+        </div>
+
+        <div class="search-controls">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Rechercher par URL, email ou description..."
+            oninput="filterPasswords()"
+          />
+          <button onclick="clearSearch()" class="btn-clear" title="Effacer la recherche">✕</button>
+        </div>
+
+        <div class="sort-controls">
+          <label>Trier par :</label>
+          <select id="sortSelect" onchange="sortPasswords()">
+            <option value="date">Date d'ajout</option>
+            <option value="domain">Nom de domaine</option>
+            <option value="email">Email/Username</option>
+            <option value="url">URL complète</option>
+          </select>
+          <button onclick="toggleSortOrder()" class="btn-sort" id="sortOrderBtn" title="Ordre croissant">↑</button>
+        </div>
+
+        <div class="add-form" id="addForm" style="display: none">
+          <h3 id="formTitle">Ajouter un nouveau mot de passe</h3>
+          <input
+            type="url"
+            id="newUrl"
+            placeholder="URL du site (ex: https://google.com)"
+            onkeydown="handleFormNavigation(event, 'newUrl')"
+          />
+          <input
+            type="email"
+            id="newEmail"
+            placeholder="Email ou nom d'utilisateur"
+            onkeydown="handleFormNavigation(event, 'newEmail')"
+          />
+          <input
+            type="text"
+            id="newDescription"
+            placeholder="Description (optionnelle)"
+            onkeydown="handleFormNavigation(event, 'newDescription')"
+          />
+          <div class="password-input-group">
+            <div class="password-field">
+              <input
+                type="password"
+                id="newPassword"
+                placeholder="Mot de passe"
+                onkeydown="handleFormNavigation(event, 'newPassword')"
+              />
+              <button
+                type="button"
+                class="toggle-password"
+                onclick="togglePasswordVisibility('newPassword')"
+              >
+                <svg class="eye-icon eye-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                  <path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+                  <circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/>
+                </svg>
+                <svg class="eye-icon eye-closed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="display: none;">
+                  <path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/>
+                  <path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/>
+                </svg>
+              </button>
+            </div>
+            <button
+              type="button"
+              onclick="generateSecurePassword()"
+              class="btn-generate"
+              title="Générer un mot de passe sécurisé"
+            >
+              Générer
+            </button>
+          </div>
+          <div class="form-buttons">
+            <button onclick="savePassword()" class="btn-success" id="saveBtn">Ajouter</button>
+            <button onclick="hideAddForm()" class="btn-secondary">
+              Annuler
+            </button>
+          </div>
+        </div>
+
+        <div class="passwords-list" id="passwordsList">
+          <!-- Les mots de passe seront affichés ici -->
+        </div>
+      </div>
+
+      <!-- Page Paramètres -->
+      <div class="page-content" id="settingsPage" style="display: none;">
+        <div class="settings-section">
+          <h3>Sécurité</h3>
+          <div class="setting-item">
+            <h4>Modifier le mot de passe maître</h4>
+            <p>Changez le mot de passe utilisé pour chiffrer vos données</p>
+            <button onclick="showChangeMasterPasswordForm()" class="btn-warning">
+              Modifier le mot de passe maître
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Données</h3>
+          <div class="setting-item">
+            <h4>Export automatique</h4>
+            <p>Sauvegarde automatique lors de la fermeture de la fenêtre</p>
+            <label class="toggle-switch">
+              <input type="checkbox" id="autoExportToggle" onchange="toggleAutoExport()" checked>
+              <span class="slider"></span>
+            </label>
+            <span id="autoExportStatus">Activé</span>
+          </div>
+          <div class="setting-item">
+            <h4>Sauvegarde locale</h4>
+            <p>Gérez vos données sauvegardées automatiquement</p>
+            <button onclick="clearLocalStorage()" class="btn-warning">
+              Effacer sauvegarde locale
+            </button>
+          </div>
+          <div class="setting-item">
+            <h4>Statistiques</h4>
+            <p id="statsText">Chargement...</p>
+          </div>
+        </div>
+
+        <!-- Formulaire de changement de mot de passe maître -->
+        <div class="change-master-form" id="changeMasterForm" style="display: none">
+          <h3>Modifier le mot de passe maître</h3>
+          <div class="password-field">
+            <input
+              type="password"
+              id="currentMasterPassword"
+              placeholder="Mot de passe maître actuel"
+              onkeydown="handleMasterPasswordNavigation(event, 'currentMasterPassword')"
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              onclick="togglePasswordVisibility('currentMasterPassword')"
+            >
+              <svg class="eye-icon eye-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+                <circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/>
+              </svg>
+              <svg class="eye-icon eye-closed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="display: none;">
+                <path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/>
+                <path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="password-field">
+            <input
+              type="password"
+              id="newMasterPassword"
+              placeholder="Nouveau mot de passe maître"
+              onkeydown="handleMasterPasswordNavigation(event, 'newMasterPassword')"
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              onclick="togglePasswordVisibility('newMasterPassword')"
+            >
+              <svg class="eye-icon eye-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+                <circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/>
+              </svg>
+              <svg class="eye-icon eye-closed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="display: none;">
+                <path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/>
+                <path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="password-field">
+            <input
+              type="password"
+              id="confirmMasterPassword"
+              placeholder="Confirmer le nouveau mot de passe"
+              onkeydown="handleMasterPasswordNavigation(event, 'confirmMasterPassword')"
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              onclick="togglePasswordVisibility('confirmMasterPassword')"
+            >
+              <svg class="eye-icon eye-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 00-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 000-17.47C428.89 172.28 347.8 112 255.66 112z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/>
+                <circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/>
+              </svg>
+              <svg class="eye-icon eye-closed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="display: none;">
+                <path d="M432 448a15.92 15.92 0 01-11.31-4.69l-352-352a16 16 0 0122.62-22.62l352 352A16 16 0 01432 448zM255.66 384c-41.49 0-81.5-12.28-118.92-36.5-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 00.14-2.94L93.5 161.38a2 2 0 00-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 00-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.13 239.13 0 0075.8-12.58 2 2 0 00.77-3.31l-21.58-21.58a4 4 0 00-3.83-1 204.8 204.8 0 01-51.16 6.47zM490.84 238.6c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.34 227.34 0 00-74.89 12.83 2 2 0 00-.75 3.31l21.55 21.55a4 4 0 003.88 1 192.82 192.82 0 0150.21-6.69c40.69 0 80.58 12.43 118.55 37 34.71 22.4 65.74 53.88 89.76 91a.13.13 0 010 .16 310.72 310.72 0 01-64.12 72.73 2 2 0 00-.15 2.95l19.9 19.89a2 2 0 002.7.13 343.49 343.49 0 0068.64-78.48 32.2 32.2 0 00-.1-34.78z"/>
+                <path d="M256 160a95.88 95.88 0 00-21.37 2.4 2 2 0 00-1 3.38l112.59 112.56a2 2 0 003.38-1A96 96 0 00256 160zM165.78 233.66a2 2 0 00-3.38 1 96 96 0 00115 115 2 2 0 001-3.38z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="form-buttons">
+            <button onclick="changeMasterPassword()" class="btn-warning">
+              Modifier
+            </button>
+            <button onclick="hideMasterPasswordForm()" class="btn-secondary">
+              Annuler
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="crypto.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
